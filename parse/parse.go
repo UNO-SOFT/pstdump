@@ -2,6 +2,7 @@ package parse
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 
 	"github.com/pkg/errors"
@@ -26,6 +27,23 @@ type Email struct {
 	Attachments                        []Attachment
 }
 
+func (e *Email) WriteTo(w io.Writer) (int64, error) {
+	var n int64
+	i, err := io.WriteString(w, e.Headers)
+	if err != nil {
+		return int64(i), err
+	}
+	n += int64(i)
+	for _, a := range e.Attachments {
+		i, err = fmt.Printf("%s", a.Data)
+		n += int64(i)
+		if err != nil {
+			return n, err
+		}
+	}
+	return n, err
+}
+
 type Attachment struct {
 	ContentDisposition string
 	Size               int64
@@ -43,7 +61,7 @@ type EmailAddress struct {
 
 func Parse(r io.Reader, f func(*Email) error) error {
 	dec := json.NewDecoder(r)
-	for {
+	for dec.More() {
 		var eml Email
 		if err := dec.Decode(&eml); err != nil {
 			if err == io.EOF {
@@ -55,4 +73,5 @@ func Parse(r io.Reader, f func(*Email) error) error {
 			return err
 		}
 	}
+	return nil
 }

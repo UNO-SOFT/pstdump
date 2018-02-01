@@ -1,7 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -15,8 +17,12 @@ func main() {
 }
 
 func Main() error {
-	return parse.Parse(os.Stdin, func(eml *parse.Email) error {
-		fmt.Println(eml)
+	flag.Parse()
+	r := io.Reader(os.Stdin)
+	log.Printf("Start parsing %v", r)
+	return parse.Parse(r, func(eml *parse.Email) error {
+		fmt.Println("===========================================")
+		eml.WriteTo(os.Stdout)
 		return nil
 	})
 }
