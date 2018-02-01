@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+mkdir -p classes
+export CLASSPATH=$(pwd)/$(ls lib/*.jar | tr '\n' ':')
+set -x
+/usr/lib/jvm/java-1.8.0/bin/javac -cp "$CLASSPATH" -sourcepath src/ -d classes src/hu/unosoft/pstdump/Dump.java
+set -x
+java -cp "$CLASSPATH":classes pstdump.Dump "$@"
