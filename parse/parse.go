@@ -35,7 +35,7 @@ func (e *Email) WriteTo(w io.Writer) (int64, error) {
 	}
 	n += int64(i)
 	for _, a := range e.Attachments {
-		i, err = fmt.Printf("%s\r\n", a.Data)
+		i, err = fmt.Fprintf(w, "%s\r\n", a.Data)
 		n += int64(i)
 		if err != nil {
 			return n, err
