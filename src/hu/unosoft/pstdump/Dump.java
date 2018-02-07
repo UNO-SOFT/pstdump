@@ -41,6 +41,7 @@ public class Dump {
 			out = new OutputStreamWriter(System.out, "UTF-8");
             final PSTFile pstFile = new PSTFile(filename);
             this.processFolder(pstFile.getRootFolder());
+			out.close();
         } catch (final Exception err) {
             err.printStackTrace();
         }
@@ -139,6 +140,7 @@ public class Dump {
 		jw.endArray();
 
 		jw.endObject();
+		jw.flush();
 		out.write('\n');
 	}
 

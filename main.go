@@ -1,14 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"flag"
-	"fmt"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"text/template"
 
 	"github.com/UNO-SOFT/pstdump/parse"
+	"github.com/pkg/errors"
 )
 
 func main() {
@@ -19,23 +21,38 @@ func main() {
 
 func Main() error {
 	flagFlat := flag.Bool("flat", false, "flatten folder structure")
+	flagVerbose := flag.Bool("v", false, "verbose logging")
+	flagFn := flag.String("filename", "{{urlquery .Folder}}-{{.ArticleNumber}}.eml", "template of file name")
 	flag.Parse()
 	destDir := flag.Arg(0)
 	if destDir == "" {
 		destDir = "."
 	}
-	os.MkdirAll(destDir, 0755)
+	if destDir != "." {
+		os.MkdirAll(destDir, 0755)
+	}
+	tmpl := template.Must(template.New("").Parse(*flagFn))
 
+	seen := make(map[string]struct{})
+	var buf bytes.Buffer
 	r := io.Reader(os.Stdin)
 	return parse.Parse(r, func(eml *parse.Email) error {
 		dn := destDir
-		var fn string
-		if *flagFlat {
-			fn = filepath.Join(dn, fmt.Sprintf("%s-%d.eml", eml.Folder, eml.ArticleNumber))
-		} else {
+		buf.Reset()
+		if err := tmpl.Execute(&buf, eml); err != nil {
+			return errors.Wrapf(err, "%+v", eml)
+		}
+		fn := buf.String()
+		if !*flagFlat {
 			dn = filepath.Join(dn, eml.Folder)
-			os.MkdirAll(dn, 0755)
-			fn = filepath.Join(dn, fmt.Sprintf("%d.eml", eml.ArticleNumber))
+			if _, ok := seen[dn]; !ok {
+				os.MkdirAll(dn, 0755)
+				seen[dn] = struct{}{}
+			}
+			fn = filepath.Join(dn, fn)
+		}
+		if *flagVerbose {
+			log.Println(fn)
 		}
 		fh, err := os.Create(fn)
 		if err != nil {
